@@ -202,7 +202,8 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
 
         buttonBarView.moveTo(index: currentIndex, animated: false, swipeDirection: .none, pagerScroll: .no)
         buttonBarView.layoutIfNeeded()
-
+        buttonBarView.reloadData()
+        
         super.reloadPagerTabStripView()
 
         buttonBarView.reloadData()
