@@ -273,7 +273,7 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
                 }
 
             if !indexPathsToReload.isEmpty {
-                DispatchQueue.main.async { [weak self] in
+                DispatchQueue.safeMainAsync { [weak self] in
                     guard let self else { return }
                     let validIndexPathsToReload = indexPathsToReload.filter {
                         $0.item >= 0 && $0.item < self.buttonBarView.numberOfItems(inSection: $0.section)
