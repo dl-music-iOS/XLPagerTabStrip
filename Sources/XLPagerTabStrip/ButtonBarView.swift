@@ -79,24 +79,41 @@ open class ButtonBarView: UICollectionView {
     open func move(fromIndex: Int, toIndex: Int, progressPercentage: CGFloat, pagerScroll: PagerScroll) {
         selectedIndex = progressPercentage > 0.5 ? toIndex : fromIndex
 
-        var fromFrame = CGRect.zero
-        if let layout = layoutAttributesForItem(at: IndexPath(item: fromIndex, section: 0)) {
-            fromFrame = layout.frame
+        guard let dataSource = dataSource else { return }
+        let numberOfItems = dataSource.collectionView(self, numberOfItemsInSection: 0)
+        guard numberOfItems > 0 else { return }
+
+        var fromFrame: CGRect
+        if fromIndex < 0 || fromIndex > numberOfItems - 1 {
+            if fromIndex < 0, let cellAtts = layoutAttributesForItem(at: IndexPath(item: 0, section: 0)) {
+                fromFrame = cellAtts.frame.offsetBy(dx: -cellAtts.frame.width, dy: 0)
+            } else if let cellAtts = layoutAttributesForItem(at: IndexPath(item: numberOfItems - 1, section: 0)) {
+                fromFrame = cellAtts.frame.offsetBy(dx: cellAtts.frame.width, dy: 0)
+            } else {
+                return
+            }
+        } else {
+            if let cellAtts = layoutAttributesForItem(at: IndexPath(item: fromIndex, section: 0))?.frame {
+                fromFrame = cellAtts
+            } else {
+                return
+            }
         }
-        let numberOfItems = dataSource!.collectionView(self, numberOfItemsInSection: 0)
 
         var toFrame: CGRect
 
         if toIndex < 0 || toIndex > numberOfItems - 1 {
             if toIndex < 0 {
-                let cellAtts = layoutAttributesForItem(at: IndexPath(item: 0, section: 0))
-                toFrame = cellAtts!.frame.offsetBy(dx: -cellAtts!.frame.size.width, dy: 0)
+                guard let cellAtts = layoutAttributesForItem(at: IndexPath(item: 0, section: 0)) else { return }
+                toFrame = cellAtts.frame.offsetBy(dx: -cellAtts.frame.size.width, dy: 0)
             } else {
-                let cellAtts = layoutAttributesForItem(at: IndexPath(item: (numberOfItems - 1), section: 0))
-                toFrame = cellAtts!.frame.offsetBy(dx: cellAtts!.frame.size.width, dy: 0)
+                let lastIndex = max(0, numberOfItems - 1)
+                guard let cellAtts = layoutAttributesForItem(at: IndexPath(item: lastIndex, section: 0)) else { return }
+                toFrame = cellAtts.frame.offsetBy(dx: cellAtts.frame.size.width, dy: 0)
             }
         } else {
-            toFrame = layoutAttributesForItem(at: IndexPath(item: toIndex, section: 0))!.frame
+            guard let cellAtts = layoutAttributesForItem(at: IndexPath(item: toIndex, section: 0)) else { return }
+            toFrame = cellAtts.frame
         }
 
         var targetFrame = fromFrame
@@ -121,8 +138,8 @@ open class ButtonBarView: UICollectionView {
         var selectedBarFrame = selectedBar.frame
 
         let selectedCellIndexPath = IndexPath(item: selectedIndex, section: 0)
-        let attributes = layoutAttributesForItem(at: selectedCellIndexPath)
-        let selectedCellFrame = attributes!.frame
+        guard let attributes = layoutAttributesForItem(at: selectedCellIndexPath) else { return }
+        let selectedCellFrame = attributes.frame
 
         updateContentOffset(animated: animated, pagerScroll: pagerScroll, toFrame: selectedCellFrame, toIndex: (selectedCellIndexPath as NSIndexPath).row)
 
@@ -161,9 +178,11 @@ open class ButtonBarView: UICollectionView {
             let cellHalfWidth = cellFrame.size.width * 0.5
             let leftAlignmentOffset = sectionInset.left + cellHalfWidth
             let rightAlignmentOffset = frame.size.width - sectionInset.right - cellHalfWidth
-            let numberOfItems = dataSource!.collectionView(self, numberOfItemsInSection: 0)
-            let progress = index / (numberOfItems - 1)
-            alignmentOffset = leftAlignmentOffset + (rightAlignmentOffset - leftAlignmentOffset) * CGFloat(progress) - cellHalfWidth
+            guard let dataSource = dataSource else { break }
+            let numberOfItems = dataSource.collectionView(self, numberOfItemsInSection: 0)
+            guard numberOfItems > 1 else { break }
+            let progress = CGFloat(index) / CGFloat(numberOfItems - 1)
+            alignmentOffset = leftAlignmentOffset + (rightAlignmentOffset - leftAlignmentOffset) * progress - cellHalfWidth
         }
 
         var contentOffset = cellFrame.origin.x - alignmentOffset
